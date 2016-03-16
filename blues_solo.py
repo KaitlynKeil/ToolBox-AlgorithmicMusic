@@ -31,6 +31,66 @@ solo = AudioStream(sampling_rate, 1)
 blues_scale = [25, 28, 30, 31, 32, 35, 37, 40, 42, 43, 44, 47, 49, 52, 54, 55, 56, 59, 61]
 beats_per_minute = 45				# Let's make a slow blues solo
 
-add_note(solo, bass, blues_scale[0], 1.0, beats_per_minute, 1.0)
+curr_note = 0
+add_note(solo, bass, blues_scale[curr_note], 1.0, beats_per_minute, 1.0)
+# held keeps the thing from whacking at one note over and over by keeping track of how
+#  many times the note has been sustained.
+held = 0
 
-solo >> "blues_solo.wav"
+# Bottom five start from different tonics
+licks = [ [ [1, 0.5], [1, 0.5], [1, 0.5], [1, 0.5] ],
+[ [-1, 0.5], [-1, 0.5], [-1, 0.5], [-1, 0.5] ], 
+[ [1, 0.25], [-1, 1], [1, 0.25], [1, 0.5] ],
+[ [1, 0.75], [1, 0.25], [1, 0.75], [1, 0.25] ],
+[ [-1, 0.5*1.1], [-1, 0.5*0.9], [-1, 0.75], [-1, 0.25] ],
+[ [-1, 0.75], [1, 0.25], [-1, 0.75], [1, 0.25] ],
+[ [1, 0.75], [-1, 0.25], [1, 0.5*1.1], [-1, 0.5*0.9] ],
+[ [1, 0.5*1.1], [1, 0.5*0.9], [1, 0.5*1.1], [1, 0.5*0.9] ],
+[ [-1, 0.5*1.1], [-1, 0.5*0.9], [-1, 0.5*1.1], [-1, 0.5*0.9] ],
+[ [2, 0.5*1.1], [1, 0.5*0.9], [-1, 0.5*1.1], [-1, 0.5*0.9] ],
+[ [2, 0.5*1.1], [-1, 0.5*0.9], [2, 0.5*1.1], [-1, 0.5*0.9] ],
+[ [1, 0.3], [1, 0.2], [-1, 0.3], [1, 0.2], [1, 0.3], [1, 0.2], [-1, 0.3], [1, 0.2] ],
+[ [-1, 0.3], [-1, 0.2], [-1, 0.3], [1, 0.2], [-1, 0.3], [1, 0.2], [-1, 0.3], [1, 0.2] ],
+[ [0-curr_note + 6, 0.5*1.1], [-1, 0.5*0.9], [-1, 0.5*1.1], [-1, 0.5*0.9] ],
+[ [0-curr_note + 6, 0.5*1.1], [1, 0.5*0.9], [1, 0.5*1.1], [1, 0.5*0.9] ],
+[ [0-curr_note + 12, 0.5*1.1], [1, 0.5*0.9], [1, 0.5*1.1], [1, 0.5*0.9] ],
+[ [0-curr_note + 12, 0.5*1.1], [-1, 0.5*0.9], [-1, 0.5*1.1], [-1, 0.5*0.9] ],
+[ [0-curr_note + 18, 1], [-1, 0.1], [-1, 0.1], [-1, 0.1], [-1, 0.1], [-1, 0.1], [-1, 0.1], [-1, 0.1], [-1, 0.1], [-1, 0.1], [-1, 0.1] ] ]
+
+for i in range(20):
+    lick = licks[choice(range(len(licks)))]
+    if held > 3:
+        # if there are more than three held notes since the last reset, in a row or not, the 
+        #  curr_note resets to 6 so as to be able to go either up or down. Lower b/c there 
+        #  are on average more licks moving up than down
+        curr_note = 6
+        held = 0
+    beats_played = 0
+    for note in lick:
+        curr_note += note[0]
+        beats_played += note[1]
+        if curr_note < 0:
+            curr_note = 0
+            held += 1
+            add_note(solo, bass, blues_scale[curr_note], 2 - beats_played, beats_per_minute, 1.0)
+            break
+        elif curr_note > len(blues_scale) - 1:
+            curr_note = 18
+            held += 1
+            add_note(solo, bass, blues_scale[curr_note], 2 - beats_played, beats_per_minute, 1.0)
+            break
+        add_note(solo, bass, blues_scale[curr_note], note[1], beats_per_minute, 1.0)
+
+#solo >> "blues_solo.wav"
+backing_track = AudioStream(sampling_rate, 1)
+Wavefile.read('backing.wav', backing_track)
+
+m = Mixer()
+
+solo *= 0.7             # adjust relative volumes to taste
+backing_track *= 2.0
+
+m.add(2.25, 0, solo)    # delay the solo to match up with backing track    
+m.add(0, 0, backing_track)
+
+m.getStream(500.0) >> "slow_blues.wav"
