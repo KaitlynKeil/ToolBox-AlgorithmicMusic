@@ -72,14 +72,19 @@ for i in range(20):
         if curr_note < 0:
             curr_note = 0
             held += 1
-            add_note(solo, bass, blues_scale[curr_note], 2 - beats_played, beats_per_minute, 1.0)
-            break
+            if 2-beats_played > note[1]:
+                add_note(solo, bass, blues_scale[curr_note], abs(2 - beats_played), beats_per_minute, 1.0)
+            else:
+                add_note(solo, bass, blues_scale[curr_note], note[1], beats_per_minute, 1.0)
         elif curr_note > len(blues_scale) - 1:
             curr_note = 18
             held += 1
-            add_note(solo, bass, blues_scale[curr_note], 2 - beats_played, beats_per_minute, 1.0)
-            break
-        add_note(solo, bass, blues_scale[curr_note], note[1], beats_per_minute, 1.0)
+            if 2-beats_played > note[1]:
+                add_note(solo, bass, blues_scale[curr_note], abs(2 - beats_played), beats_per_minute, 1.0)
+            else:
+                add_note(solo, bass, blues_scale[curr_note], note[1], beats_per_minute, 1.0)
+        else:
+            add_note(solo, bass, blues_scale[curr_note], note[1], beats_per_minute, 1.0)
 
 #solo >> "blues_solo.wav"
 backing_track = AudioStream(sampling_rate, 1)
